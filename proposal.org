@@ -1,6 +1,9 @@
 #+title: Declaration-level static assertions
+#+subtitle: WG14 N3641
 #+author: Céleste Ornato <celeste@ornato.com>
-#+LATEX_HEADER: \makeatletter \@ifpackageloaded{geometry}{\geometry{margin=2cm}}{\usepackage[margin=2cm]{geometry}} \makeatother
+#+LATEX_HEADER: \makeatletter \@ifpackageloaded{geometry}{\geometry{margin=2.5cm}}{\usepackage[margin=2.5cm]{geometry}} \makeatother
+#+latex_header: \parskip=12pt plus 1pt
+#+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [a4paper, 12pt]
 #+options: toc:nil
 
@@ -19,16 +22,17 @@ Inattention and forgetfulness cause developers to write insecure code.
 
 If one wishes to convey to the user of a library that certain function parameters
 can cause undefined or unwanted behaviour, they can only do so in written
-documentation. This leaves the developer in a precarious position: they can
-either add checks at execution-time, which come with an unwanted performance overhead,
+documentation.  This leaves the developer in a precarious position: they can
+either add checks at execution-time, which come with an unwanted performance
+overhead and having to setup and document an error code system,
 or they can assume that everyone will read the documentation, which may create
 vulnerabilities.
 
 This proposal seeks to make some of these checks possible without overhead, by implicitly
 making static assertions before the function call.
 
-This feature can be seen as an extension to the C99 "static array index in
-function parameters" feature, in that it both allows for optimisations by the
+This feature can be seen as an extension to the C99 ``static array index in
+function parameters'' feature, in that it both allows for optimisations by the
 compiler and for more compile-time checking for the user.
 
 * Proposal
@@ -36,39 +40,40 @@ compiler and for more compile-time checking for the user.
 When the attribute ~[[assume(expr)]]~ is associated to the declaration of a
 function ~foo~, any call to ~foo~ will require the compiler to check that ~expr~
 is *not provably false* (see [[Quirks]]) given the parameters.
-When compiling ~foo~, it is assumed that ~expr~ is always true. Calling the
+When compiling ~foo~, it is assumed that ~expr~ is always true.  Calling the
 function with parameters that do not respect ~expr~ is undefined behaviour.
 
 ~expr~ may address the function parameters by their name, or by calling them
-~$n~, where ~n~ is the 0-indexed number of the parameter from right to left.
+~$n~, where ~n~ is the 0-indexed number of the parameter from left to right.
 
-If a referenced variable is an array, it should decay into a pointer. While it
+If a referenced variable is an array, it should decay into a pointer.  While it
 could have allowed for more features, this would have created bug-prone behaviour
-depending on whether the author of ~expr~ expected a pointer or an array. In any
+depending on whether the author of ~expr~ expected a pointer or an array.  In any
 case, most problems related to the size of arrays are already solved by having
 static indices in the function signature.
 
 ** Rationale
 Adding more undefined behaviour in C2y might be controversial, it would certainly
-not be immediately seen as "Enabling secure programming".
+not be immediately seen as ``Enabling secure programming''.
 
 This feature is meant for cases where the developer already considers certain
-parameters as "Undefined behaviour". At this point, it does not matter
-whether the standard considers the code as defined, because the results would
+parameters to be ``Undefined behaviour''.  At this point, it does not matter
+whether the standard considers the code to be defined, because the results would
 still be unexpected and prone to breakage.
 
 Allowing for further optimisation is just a welcome consequence of one being able
-to specify what they consider undefined behaviour. In reality, the wanted feature is the compiler
-being capable of detecting mistakes. Function signatures using this attribute also
-make the code self-documenting, which makes it easier to know what the developer expected
+to specify what they consider undefined behaviour.  In reality, the wanted feature is the compiler
+being capable of detecting mistakes.  Function signatures using this attribute also
+make the code self-documenting, which makes it easier to understand the assumptions made by the developer
 when writing the function.
 
+\pagebreak
 ** Example
 #+begin_src C
 [[assume($1 != 0)]]
 int division(int, int);
 
-[[assume(a >= b, "Function requires a >= b")]]
+[[assume(a >= b, "Substraction requires a >= b")]]
 unsigned int substract(unsigned int a, unsigned int b);
 
 int main(void)
@@ -77,11 +82,13 @@ int main(void)
     int result1 = division(1, 2);
     unsigned int result2 = substract(2, 3);
 
-    // These do not compile.
-    int result3 = division(2, 0);           // Error: "Assumption '$1 != 0' is false."
-    unsigned int result4 = substract(0, 6); // Error: "Function requires a >= b."
+    // Error: "Assumption '$1 != 0' is false."
+    int result3 = division(2, 0);
+    // Error: "Substraction requires a >= b."
+    unsigned int result4 = substract(0, 6);
 }
 #+end_src
+
 
 ** Quirks
 *An assumption whose validity cannot be proven will be treated as valid.*
@@ -91,19 +98,19 @@ This is consistent with the way in which static array indices work in
 function signatures.
 
 Due to the way static assertions work in general, we cannot always assert
-the validity of every expression. However, in "safer", more restricted
+the validity of every expression.  However, in ``safer'', more restricted
 styles of C, where we only work with automatic-storage-duration variables
 and constant-sized arrays, this feature proves itself quite powerful already.
 
-With C23 came more ways to define constant data, through ~constexpr~.
-Assuming it ever reaches parity with C++ ~constexpr~, or considering the possible
+With C23 came more ways to define constant data, through ~constexpr~.  Assuming
+it ever reaches parity with C++ ~constexpr~, or considering the possible
 presence of [[https://open-std.org/jtc1/sc22/wg14/www/docs/n3600.htm][N3600]] in C2y, this feature could continue to improve over time.
 
 * Prior implementations
-There is seemingly no compiler extension allowing for this exact feature.
-One could imagine possible function-like macros being able to replicate such
-a feature, but it would be non-trivial to write for functions whose return
-value isn't discarded.
+There is seemingly no compiler extension allowing for this exact feature.  One
+could imagine possible function-like macros being able to replicate such a
+feature, but it would be non-trivial to write for functions whose return value
+isn't discarded.
 
 Even then, macros would not be ideal, as they would:
 1. Allow for the library user to call the function without its underlying assumptions,
@@ -112,8 +119,16 @@ Even then, macros would not be ideal, as they would:
 4. Be incompatible with styleguides wherein parameters are unnamed in declarations,
 5. Generally worsen the user experience, as macros are not always well supported
    by language servers,
-6. Make the header files generally messy with hard to modify functions; and
+6. Make the assumptions messy and hard to modify; and
 7. Come with the usual points of failure of macros ([[https://wiki.sei.cmu.edu/confluence/display/c/PRE31-C.+Avoid+side+effects+in+arguments+to+unsafe+macros][CERT-PRE31-C]], notably).
 
 Indeed, it would be much more interesting for it to be a standard feature
 instead of being bound by the rules of macros.
+
+* Uncertainties
++ ``To assume'' sounds somewhat hand-wavy.  It is correct in that both the author of
+  the library and the compiler are allowed to make assumptions related to function parameters,
+  but ``enforce'' would better represent the purpose of the feature as a bug-preventing
+  measure.  I chose ``assume'' for this paper because ``enforce'' sounded a bit violent,
+  but I would be more than open to either names for the feature (and to possibly many
+  other names).
