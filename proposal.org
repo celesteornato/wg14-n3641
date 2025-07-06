@@ -17,6 +17,22 @@ statically-verifiable constraints in function parameters.
 This features allows both for added safety on the caller side, and possibly for
 further optimisation on the compiler side.
 
+* Foreword
+I have, between the initial writing of this paper and its submission, been made aware
+of the fact that C++26 has implemented a similar feature, through ``function contract
+specifiers''.
+
+While similar in the abstract, the proposed feature is fairly different in practice:
+For one, It aims to add compile-time security, rather than at execution-time.
+It also does not add any new syntax, insofar as functions compiled using this feature
+should still be callable from older code without any issue[fn:1].
+
+I believe it is still important to define this feature independently from other standards,
+so as to make something that suits the needs and aims of C developers as well as possible.
+
+[fn:1] This is only guaranteed if the caller adheres to the guidelines set by the library
+developer regarding proper usage of the function, see [[Rationale]].
+
 * Introduction
 Inattention and forgetfulness cause developers to write insecure code.
 
@@ -67,7 +83,6 @@ being capable of detecting mistakes.  Function signatures using this attribute a
 make the code self-documenting, which makes it easier to understand the assumptions made by the developer
 when writing the function.
 
-\pagebreak
 ** Example
 #+begin_src C
 [[assume($1 != 0)]]
@@ -106,11 +121,15 @@ With C23 came more ways to define constant data, through ~constexpr~.  Assuming
 it ever reaches parity with C++ ~constexpr~, or considering the possible
 presence of [[https://open-std.org/jtc1/sc22/wg14/www/docs/n3600.htm][N3600]] in C2y, this feature could continue to improve over time.
 
-* Prior implementations
-There is seemingly no compiler extension allowing for this exact feature.  One
+* Implementation
+Seeing as the more complex C++ ``contract'' system will in any case be implemented
+by C++26-compliant compilers, this feature should not pose a problem to C2y-compliant
+compilers. In any case, as was previously stated, calling a function compiled with
+~assume~ would still work on previous standards in library-compliant contexts.
+
+There is seemingly no C compiler extension allowing for this exact feature.  One
 could imagine possible function-like macros being able to replicate such a
-feature, but it would be non-trivial to write for functions whose return value
-isn't discarded.
+feature, but it would certainly be non-trivial.
 
 Even then, macros would not be ideal, as they would:
 1. Allow for the library user to call the function without its underlying assumptions,
@@ -124,11 +143,3 @@ Even then, macros would not be ideal, as they would:
 
 Indeed, it would be much more interesting for it to be a standard feature
 instead of being bound by the rules of macros.
-
-* Uncertainties
-+ ``To assume'' sounds somewhat hand-wavy.  It is correct in that both the author of
-  the library and the compiler are allowed to make assumptions related to function parameters,
-  but ``enforce'' would better represent the purpose of the feature as a bug-preventing
-  measure.  I chose ``assume'' for this paper because ``enforce'' sounded a bit violent,
-  but I would be more than open to either names for the feature (and to possibly many
-  other names).
