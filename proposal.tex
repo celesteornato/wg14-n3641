@@ -1,4 +1,4 @@
-% Created 2025-07-06 Sun 23:29
+% Created 2025-07-07 Mon 01:01
 % Intended LaTeX compiler: pdflatex
 \documentclass[a4paper, 12pt]{article}
 \usepackage[utf8]{inputenc}
@@ -35,36 +35,36 @@
 \item \textbf{Target audience}: Developers writing libraries
 \end{itemize}
 \section{Abstract}
-\label{sec:org43b546d}
+\label{sec:orge50960a}
 This proposal aims to add the \texttt{[[assume(expr)]]} and \texttt{[[assume(expr, msg)]]}
 attributes to function declarations, allowing the designer of a library to specify
 statically-verifiable constraints in function parameters.
 
-This features allows both for added safety on the caller side, and possibly for
-further optimisation on the compiler side.
+This feature allows both for added safety on the caller side, and possibly for
+further optimization on the compiler side.
 \section{Foreword}
-\label{sec:org2d2a0d4}
+\label{sec:orga5c4b6f}
 I have, between the initial writing of this paper and its submission, been made aware
 of the fact that C++26 has implemented a similar feature, through ``function contract
 specifiers''.
 
 While similar in the abstract, the proposed feature is fairly different in practice:
 For one, It aims to add compile-time security, rather than at execution-time.
-It also does not add any new syntax, insofar as functions compiled using this feature
-should still be callable from older code without any issue\footnote{This is only guaranteed if the caller adheres to the guidelines set by the library
-developer regarding proper usage of the function, see \ref{sec:orgcad1d61}.}.
+It also does not add any new syntax, insofar as functions compiled with this feature
+should still be callable from older code without issues\footnote{This is only guaranteed if the caller adheres to the guidelines set by the library
+developer regarding proper usage of the function; see \ref{sec:orgfa252a4}.}.
 
 I believe it is still important to define this feature independently from other standards,
-so as to make something that suits the needs and aims of C developers as well as possible.
+so as to better suit the needs and aims of C developers.
 \section{Introduction}
-\label{sec:org5a4c6a6}
+\label{sec:orgb625cb3}
 Inattention and forgetfulness cause developers to write insecure code.
 
 If one wishes to convey to the user of a library that certain function parameters
-can cause undefined or unwanted behaviour, they can only do so in written
+can cause undefined or unwanted behavior, they can only do so in written
 documentation.  This leaves the developer in a precarious position: they can
 either add checks at execution-time, which come with an unwanted performance
-overhead and having to setup and document an error code system,
+overhead and having to set up and document an error code system,
 or they can assume that everyone will read the documentation, which may create
 vulnerabilities.
 
@@ -72,69 +72,68 @@ This proposal seeks to make some of these checks possible without overhead, by i
 making static assertions before the function call.
 
 This feature can be seen as an extension to the C99 ``static array index in
-function parameters'' feature, in that it both allows for optimisations by the
+function parameters'' feature, in that it both allows for optimizations by the
 compiler and for more compile-time checking for the user.
 \section{Proposal}
-\label{sec:orgdbefd92}
+\label{sec:org7e11dbf}
 \subsection{Technical Description}
-\label{sec:orgeb6cdfa}
-When the attribute \texttt{[[assume(expr)]]} is associated to the declaration of a
+\label{sec:org5227bef}
+When the attribute \texttt{[[assume(expr)]]} is associated with the declaration of a
 function \texttt{foo}, any call to \texttt{foo} will require the compiler to check that \texttt{expr}
-is \textbf{not provably false} (see \ref{sec:org6870099}) given the parameters.
+is \textbf{not provably false} (see \ref{sec:org7a60b83}) given the parameters.
 When compiling \texttt{foo}, it is assumed that \texttt{expr} is always true.  Calling the
-function with parameters that do not respect \texttt{expr} is undefined behaviour.
+function with parameters that do not respect \texttt{expr} is undefined behavior.
 
 \texttt{expr} may address the function parameters by their name, or by calling them
 \texttt{\$n}, where \texttt{n} is the 0-indexed number of the parameter from left to right.
 
 If a referenced variable is an array, it should decay into a pointer.  While it
-could have allowed for more features, this would have created bug-prone behaviour
+could have allowed for more features, this would have created bug-prone behavior
 depending on whether the author of \texttt{expr} expected a pointer or an array.  In any
 case, most problems related to the size of arrays are already solved by having
 static indices in the function signature.
 \subsection{Rationale}
-\label{sec:orgcad1d61}
-Adding more undefined behaviour in C2y might be controversial, it would certainly
-not be immediately seen as ``Enabling secure programming''.
+\label{sec:orgfa252a4}
+Introducing more undefined behavior in C2y may be controversial; it would certainly
+not be seen as ``Enabling secure programming'' at a first glance.
 
 This feature is meant for cases where the developer already considers certain
-parameters to be ``Undefined behaviour''.  At this point, it does not matter
+parameters to be ``Undefined behavior''.  At this point, it does not matter
 whether the standard considers the code to be defined, because the results would
 still be unexpected and prone to breakage.
 
 Allowing for further optimisation is just a welcome consequence of one being able
-to specify what they consider undefined behaviour.  In reality, the wanted feature is the compiler
+to specify what they consider undefined behavior.  In reality, the wanted feature is the compiler
 being capable of detecting mistakes.  Function signatures using this attribute also
 make the code self-documenting, which makes it easier to understand the assumptions made by the developer
 when writing the function.
 \subsection{Example}
-\label{sec:org8ef7cc4}
+\label{sec:org6e883ca}
 \begin{verbatim}
 [[assume($1 != 0)]]
 int division(int, int);
 
 [[assume(a >= b, "Substraction requires a >= b")]]
-unsigned int substract(unsigned int a, unsigned int b);
+unsigned int subtract(unsigned int a, unsigned int b);
 
 int main(void)
 {
     // These compile, with no execution-time overhead.
-    int result1 = division(1, 2);
-    unsigned int result2 = substract(2, 3);
+    int result1 = division(9, 3);
+    unsigned int result2 = subtract(200, 60);
 
     // Error: "Assumption '$1 != 0' is false."
     int result3 = division(2, 0);
     // Error: "Substraction requires a >= b."
-    unsigned int result4 = substract(0, 6);
+    unsigned int result4 = subtract(2, 9);
 }
 \end{verbatim}
 \subsection{Quirks}
-\label{sec:org6870099}
+\label{sec:org7a60b83}
 \textbf{An assumption whose validity cannot be proven will be treated as valid.}
 This should not be a problem, as this would just mean coming back to the
 status quo of having to be careful as a user.
-This is consistent with the way in which static array indices work in
-function signatures.
+This aligns with how static array indices work in function signatures.
 
 Due to the way static assertions work in general, we cannot always assert
 the validity of every expression.  However, in ``safer'', more restricted
@@ -145,11 +144,12 @@ With C23 came more ways to define constant data, through \texttt{constexpr}.  As
 it ever reaches parity with C++ \texttt{constexpr}, or considering the possible
 presence of \href{https://open-std.org/jtc1/sc22/wg14/www/docs/n3600.htm}{N3600} in C2y, this feature could continue to improve over time.
 \section{Implementation}
-\label{sec:org7dd39ac}
+\label{sec:org97de7bb}
 Seeing as the more complex C++ ``contract'' system will in any case be implemented
-by C++26-compliant compilers, this feature should not pose a problem to C2y-compliant
-compilers. In any case, as was previously stated, calling a function compiled with
-\texttt{assume} would still work on previous standards in library-compliant contexts.
+by C++26-compliant compilers, having this feature should not pose a problem to
+C2y-compliant compilers. In any case, as was previously stated, calling a function
+compiled with \texttt{assume} would still work on previous standards in library-compliant
+contexts.
 
 There is seemingly no C compiler extension allowing for this exact feature.  One
 could imagine possible function-like macros being able to replicate such a
@@ -160,7 +160,7 @@ Even then, macros would not be ideal, as they would:
 \item Allow for the library user to call the function without its underlying assumptions,
 \item Make compile-time optimisations impossible,
 \item Clutter the program with extraneous definitions if we have one macro per function,
-\item Be incompatible with styleguides wherein parameters are unnamed in declarations,
+\item Be incompatible with style guides wherein parameters are unnamed in declarations,
 \item Generally worsen the user experience, as macros are not always well supported
 by language servers,
 \item Make the assumptions messy and hard to modify; and

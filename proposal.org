@@ -14,8 +14,8 @@ This proposal aims to add the ~[[assume(expr)]]~ and ~[[assume(expr, msg)]]~
 attributes to function declarations, allowing the designer of a library to specify
 statically-verifiable constraints in function parameters.
 
-This features allows both for added safety on the caller side, and possibly for
-further optimisation on the compiler side.
+This feature allows both for added safety on the caller side, and possibly for
+further optimization on the compiler side.
 
 * Foreword
 I have, between the initial writing of this paper and its submission, been made aware
@@ -24,23 +24,23 @@ specifiers''.
 
 While similar in the abstract, the proposed feature is fairly different in practice:
 For one, It aims to add compile-time security, rather than at execution-time.
-It also does not add any new syntax, insofar as functions compiled using this feature
-should still be callable from older code without any issue[fn:1].
+It also does not add any new syntax, insofar as functions compiled with this feature
+should still be callable from older code without issues[fn:1].
 
 I believe it is still important to define this feature independently from other standards,
-so as to make something that suits the needs and aims of C developers as well as possible.
+so as to better suit the needs and aims of C developers.
 
 [fn:1] This is only guaranteed if the caller adheres to the guidelines set by the library
-developer regarding proper usage of the function, see [[Rationale]].
+developer regarding proper usage of the function; see [[Rationale]].
 
 * Introduction
 Inattention and forgetfulness cause developers to write insecure code.
 
 If one wishes to convey to the user of a library that certain function parameters
-can cause undefined or unwanted behaviour, they can only do so in written
+can cause undefined or unwanted behavior, they can only do so in written
 documentation.  This leaves the developer in a precarious position: they can
 either add checks at execution-time, which come with an unwanted performance
-overhead and having to setup and document an error code system,
+overhead and having to set up and document an error code system,
 or they can assume that everyone will read the documentation, which may create
 vulnerabilities.
 
@@ -48,37 +48,37 @@ This proposal seeks to make some of these checks possible without overhead, by i
 making static assertions before the function call.
 
 This feature can be seen as an extension to the C99 ``static array index in
-function parameters'' feature, in that it both allows for optimisations by the
+function parameters'' feature, in that it both allows for optimizations by the
 compiler and for more compile-time checking for the user.
 
 * Proposal
 ** Technical Description
-When the attribute ~[[assume(expr)]]~ is associated to the declaration of a
+When the attribute ~[[assume(expr)]]~ is associated with the declaration of a
 function ~foo~, any call to ~foo~ will require the compiler to check that ~expr~
 is *not provably false* (see [[Quirks]]) given the parameters.
 When compiling ~foo~, it is assumed that ~expr~ is always true.  Calling the
-function with parameters that do not respect ~expr~ is undefined behaviour.
+function with parameters that do not respect ~expr~ is undefined behavior.
 
 ~expr~ may address the function parameters by their name, or by calling them
 ~$n~, where ~n~ is the 0-indexed number of the parameter from left to right.
 
 If a referenced variable is an array, it should decay into a pointer.  While it
-could have allowed for more features, this would have created bug-prone behaviour
+could have allowed for more features, this would have created bug-prone behavior
 depending on whether the author of ~expr~ expected a pointer or an array.  In any
 case, most problems related to the size of arrays are already solved by having
 static indices in the function signature.
 
 ** Rationale
-Adding more undefined behaviour in C2y might be controversial, it would certainly
-not be immediately seen as ``Enabling secure programming''.
+Introducing more undefined behavior in C2y may be controversial; it would certainly
+not be seen as ``Enabling secure programming'' at a first glance.
 
 This feature is meant for cases where the developer already considers certain
-parameters to be ``Undefined behaviour''.  At this point, it does not matter
+parameters to be ``Undefined behavior''.  At this point, it does not matter
 whether the standard considers the code to be defined, because the results would
 still be unexpected and prone to breakage.
 
 Allowing for further optimisation is just a welcome consequence of one being able
-to specify what they consider undefined behaviour.  In reality, the wanted feature is the compiler
+to specify what they consider undefined behavior.  In reality, the wanted feature is the compiler
 being capable of detecting mistakes.  Function signatures using this attribute also
 make the code self-documenting, which makes it easier to understand the assumptions made by the developer
 when writing the function.
@@ -89,18 +89,18 @@ when writing the function.
 int division(int, int);
 
 [[assume(a >= b, "Substraction requires a >= b")]]
-unsigned int substract(unsigned int a, unsigned int b);
+unsigned int subtract(unsigned int a, unsigned int b);
 
 int main(void)
 {
     // These compile, with no execution-time overhead.
-    int result1 = division(1, 2);
-    unsigned int result2 = substract(2, 3);
+    int result1 = division(9, 3);
+    unsigned int result2 = subtract(200, 60);
 
     // Error: "Assumption '$1 != 0' is false."
     int result3 = division(2, 0);
     // Error: "Substraction requires a >= b."
-    unsigned int result4 = substract(0, 6);
+    unsigned int result4 = subtract(2, 9);
 }
 #+end_src
 
@@ -109,8 +109,7 @@ int main(void)
 *An assumption whose validity cannot be proven will be treated as valid.*
 This should not be a problem, as this would just mean coming back to the
 status quo of having to be careful as a user.
-This is consistent with the way in which static array indices work in
-function signatures.
+This aligns with how static array indices work in function signatures.
 
 Due to the way static assertions work in general, we cannot always assert
 the validity of every expression.  However, in ``safer'', more restricted
@@ -123,9 +122,10 @@ presence of [[https://open-std.org/jtc1/sc22/wg14/www/docs/n3600.htm][N3600]] in
 
 * Implementation
 Seeing as the more complex C++ ``contract'' system will in any case be implemented
-by C++26-compliant compilers, this feature should not pose a problem to C2y-compliant
-compilers. In any case, as was previously stated, calling a function compiled with
-~assume~ would still work on previous standards in library-compliant contexts.
+by C++26-compliant compilers, having this feature should not pose a problem to
+C2y-compliant compilers. In any case, as was previously stated, calling a function
+compiled with ~assume~ would still work on previous standards in library-compliant
+contexts.
 
 There is seemingly no C compiler extension allowing for this exact feature.  One
 could imagine possible function-like macros being able to replicate such a
@@ -135,7 +135,7 @@ Even then, macros would not be ideal, as they would:
 1. Allow for the library user to call the function without its underlying assumptions,
 2. Make compile-time optimisations impossible,
 3. Clutter the program with extraneous definitions if we have one macro per function,
-4. Be incompatible with styleguides wherein parameters are unnamed in declarations,
+4. Be incompatible with style guides wherein parameters are unnamed in declarations,
 5. Generally worsen the user experience, as macros are not always well supported
    by language servers,
 6. Make the assumptions messy and hard to modify; and
