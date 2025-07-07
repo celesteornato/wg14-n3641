@@ -1,4 +1,4 @@
-% Created 2025-07-07 Mon 01:01
+% Created 2025-07-07 Mon 16:46
 % Intended LaTeX compiler: pdflatex
 \documentclass[a4paper, 12pt]{article}
 \usepackage[utf8]{inputenc}
@@ -35,7 +35,7 @@
 \item \textbf{Target audience}: Developers writing libraries
 \end{itemize}
 \section{Abstract}
-\label{sec:orge50960a}
+\label{sec:orge0e6a1c}
 This proposal aims to add the \texttt{[[assume(expr)]]} and \texttt{[[assume(expr, msg)]]}
 attributes to function declarations, allowing the designer of a library to specify
 statically-verifiable constraints in function parameters.
@@ -43,21 +43,21 @@ statically-verifiable constraints in function parameters.
 This feature allows both for added safety on the caller side, and possibly for
 further optimization on the compiler side.
 \section{Foreword}
-\label{sec:orga5c4b6f}
+\label{sec:orga597c69}
 I have, between the initial writing of this paper and its submission, been made aware
 of the fact that C++26 has implemented a similar feature, through ``function contract
 specifiers''.
 
 While similar in the abstract, the proposed feature is fairly different in practice:
-For one, It aims to add compile-time security, rather than at execution-time.
+for one, It aims to add compile-time security, rather than at execution-time.
 It also does not add any new syntax, insofar as functions compiled with this feature
 should still be callable from older code without issues\footnote{This is only guaranteed if the caller adheres to the guidelines set by the library
-developer regarding proper usage of the function; see \ref{sec:orgfa252a4}.}.
+developer regarding proper usage of the function; see \ref{sec:org6c19d62}.}.
 
 I believe it is still important to define this feature independently from other standards,
 so as to better suit the needs and aims of C developers.
 \section{Introduction}
-\label{sec:orgb625cb3}
+\label{sec:orga1726cb}
 Inattention and forgetfulness cause developers to write insecure code.
 
 If one wishes to convey to the user of a library that certain function parameters
@@ -75,12 +75,12 @@ This feature can be seen as an extension to the C99 ``static array index in
 function parameters'' feature, in that it both allows for optimizations by the
 compiler and for more compile-time checking for the user.
 \section{Proposal}
-\label{sec:org7e11dbf}
+\label{sec:org3161b3f}
 \subsection{Technical Description}
-\label{sec:org5227bef}
+\label{sec:org9eb89d5}
 When the attribute \texttt{[[assume(expr)]]} is associated with the declaration of a
 function \texttt{foo}, any call to \texttt{foo} will require the compiler to check that \texttt{expr}
-is \textbf{not provably false} (see \ref{sec:org7a60b83}) given the parameters.
+is \textbf{not provably false} (see \ref{sec:org3b2256e}) given the parameters.
 When compiling \texttt{foo}, it is assumed that \texttt{expr} is always true.  Calling the
 function with parameters that do not respect \texttt{expr} is undefined behavior.
 
@@ -93,7 +93,7 @@ depending on whether the author of \texttt{expr} expected a pointer or an array.
 case, most problems related to the size of arrays are already solved by having
 static indices in the function signature.
 \subsection{Rationale}
-\label{sec:orgfa252a4}
+\label{sec:org6c19d62}
 Introducing more undefined behavior in C2y may be controversial; it would certainly
 not be seen as ``Enabling secure programming'' at a first glance.
 
@@ -108,7 +108,7 @@ being capable of detecting mistakes.  Function signatures using this attribute a
 make the code self-documenting, which makes it easier to understand the assumptions made by the developer
 when writing the function.
 \subsection{Example}
-\label{sec:org6e883ca}
+\label{sec:org19c925f}
 \begin{verbatim}
 [[assume($1 != 0)]]
 int division(int, int);
@@ -129,7 +129,7 @@ int main(void)
 }
 \end{verbatim}
 \subsection{Quirks}
-\label{sec:org7a60b83}
+\label{sec:org3b2256e}
 \textbf{An assumption whose validity cannot be proven will be treated as valid.}
 This should not be a problem, as this would just mean coming back to the
 status quo of having to be careful as a user.
@@ -144,7 +144,7 @@ With C23 came more ways to define constant data, through \texttt{constexpr}.  As
 it ever reaches parity with C++ \texttt{constexpr}, or considering the possible
 presence of \href{https://open-std.org/jtc1/sc22/wg14/www/docs/n3600.htm}{N3600} in C2y, this feature could continue to improve over time.
 \section{Implementation}
-\label{sec:org97de7bb}
+\label{sec:org150f5e1}
 Seeing as the more complex C++ ``contract'' system will in any case be implemented
 by C++26-compliant compilers, having this feature should not pose a problem to
 C2y-compliant compilers. In any case, as was previously stated, calling a function
@@ -155,18 +155,18 @@ There is seemingly no C compiler extension allowing for this exact feature.  One
 could imagine possible function-like macros being able to replicate such a
 feature, but it would certainly be non-trivial.
 
-Even then, macros would not be ideal, as they would:
+Even then, macro-based implementations would not be ideal, as they would:
 \begin{enumerate}
-\item Allow for the library user to call the function without its underlying assumptions,
-\item Make compile-time optimisations impossible,
-\item Clutter the program with extraneous definitions if we have one macro per function,
-\item Be incompatible with style guides wherein parameters are unnamed in declarations,
-\item Generally worsen the user experience, as macros are not always well supported
+\item allow for the library user to call the function without its underlying assumptions,
+\item make compile-time optimisations impossible,
+\item clutter the program with extraneous definitions if we have one macro per function,
+\item be incompatible with style guides wherein parameters are unnamed in declarations,
+\item generally worsen the user experience, as macros are not always well supported
 by language servers,
-\item Make the assumptions messy and hard to modify; and
-\item Come with the usual points of failure of macros (\href{https://wiki.sei.cmu.edu/confluence/display/c/PRE31-C.+Avoid+side+effects+in+arguments+to+unsafe+macros}{CERT-PRE31-C}, notably).
+\item make the assumptions messy and hard to modify; and
+\item come with the usual points of failure of macros (\href{https://wiki.sei.cmu.edu/confluence/display/c/PRE31-C.+Avoid+side+effects+in+arguments+to+unsafe+macros}{CERT-PRE31-C}, notably).
 \end{enumerate}
 
-Indeed, it would be much more interesting for it to be a standard feature
-instead of being bound by the rules of macros.
+Indeed, it would be much more interesting for assumptions to be a standard feature,
+rather than being bound by the rules of macros.
 \end{document}

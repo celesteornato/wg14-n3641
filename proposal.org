@@ -23,7 +23,7 @@ of the fact that C++26 has implemented a similar feature, through ``function con
 specifiers''.
 
 While similar in the abstract, the proposed feature is fairly different in practice:
-For one, It aims to add compile-time security, rather than at execution-time.
+for one, It aims to add compile-time security, rather than at execution-time.
 It also does not add any new syntax, insofar as functions compiled with this feature
 should still be callable from older code without issues[fn:1].
 
@@ -131,15 +131,15 @@ There is seemingly no C compiler extension allowing for this exact feature.  One
 could imagine possible function-like macros being able to replicate such a
 feature, but it would certainly be non-trivial.
 
-Even then, macros would not be ideal, as they would:
-1. Allow for the library user to call the function without its underlying assumptions,
-2. Make compile-time optimisations impossible,
-3. Clutter the program with extraneous definitions if we have one macro per function,
-4. Be incompatible with style guides wherein parameters are unnamed in declarations,
-5. Generally worsen the user experience, as macros are not always well supported
+Even then, macro-based implementations would not be ideal, as they would:
+1. allow for the library user to call the function without its underlying assumptions,
+2. make compile-time optimisations impossible,
+3. clutter the program with extraneous definitions if we have one macro per function,
+4. be incompatible with style guides wherein parameters are unnamed in declarations,
+5. generally worsen the user experience, as macros are not always well supported
    by language servers,
-6. Make the assumptions messy and hard to modify; and
-7. Come with the usual points of failure of macros ([[https://wiki.sei.cmu.edu/confluence/display/c/PRE31-C.+Avoid+side+effects+in+arguments+to+unsafe+macros][CERT-PRE31-C]], notably).
+6. make the assumptions messy and hard to modify; and
+7. come with the usual points of failure of macros ([[https://wiki.sei.cmu.edu/confluence/display/c/PRE31-C.+Avoid+side+effects+in+arguments+to+unsafe+macros][CERT-PRE31-C]], notably).
 
-Indeed, it would be much more interesting for it to be a standard feature
-instead of being bound by the rules of macros.
+Indeed, it would be much more interesting for assumptions to be a standard feature,
+rather than being bound by the rules of macros.
